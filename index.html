@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo Indígena</title>
+    <style>
+        :root {
+            --primary: #c19a6b; /* Marrom claro/papel antigo */
+            --secondary: #e8d0a9; /* Bege suave */
+            --accent: #d35400; /* Laranja queimado */
+            --background: #fdfaf5; /* Creme */
+            --text: #2c3e50; /* Cinza escuro */
+            --success: #2ecc71; /* Verde */
+            --danger: #e74c3c; /* Vermelho */
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--background);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 100vh;
+            margin: 0;
+            padding: 15px;
+            overflow-x: hidden;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 15px;
+            border-bottom: 3px solid var(--primary);
+            padding-bottom: 8px;
+            width: 100%;
+            max-width: 600px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .logo-container {
+            width: auto;
+            max-height: 70px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .logo-container img {
+            max-height: 70px;
+            width: auto;
+            object-fit: contain;
+        }
+
+        h1 {
+            color: var(--accent);
+            margin: 0;
+            font-size: 1.6rem;
+        }
+
+        .subtitulo-professor {
+            font-size: 1rem;
+            color: #7f8c8d;
+            margin: 4px 0 0 0;
+            font-weight: 500;
+        }
+
+        h2#rodada-display {
+            font-size: 1.1rem;
+            color: var(--text);
+            margin: 8px 0 0 0;
+        }
+
+        #pergunta-container {
+            background-color: #f5eedf;
+            border-left: 5px solid var(--accent);
+            padding: 10px 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+            max-width: 380px;
+            width: 100%;
+            box-sizing: border-box;
+            font-weight: 600;
+            font-size: 1rem;
+            text-align: left;
+            display: none;
+        }
+
+        #instrucoes {
+            font-size: 0.95rem;
+            font-style: italic;
+            margin: 5px 0 0 0;
+            color: #555;
+        }
+
+        #dragging-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            width: 100%;
+            max-width: 380px;
+            margin-bottom: 20px;
+            min-height: 140px;
+            border: 2px dashed transparent;
+            border-radius: 8px;
+            padding: 4px;
+        }
+
+        #dragging-container.over {
+            border-color: var(--primary);
+            background-color: #f5eedf;
+        }
+
+        .draggable-image {
+            width: 100%;
+            height: 140px;
+            background-color: #eee;
+            border: 4px solid var(--primary);
+            border-radius: 8px;
+            cursor: grab;
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            user-select: none;
+            touch-action: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .dragging {
+            opacity: 0.5;
+            transform: scale(1.05);
+            cursor: grabbing;
+            z-index: 10;
+        }
+
+        #dropping-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+            width: 100%;
+            max-width: 380px;
+        }
+
+        .drop-zone {
+            background-color: var(--secondary);
+            border: 3px dashed var(--primary);
+            border-radius: 8px;
+            min-height: 50px;
+            padding: 8px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .drop-zone h3 {
+            margin: 0;
+            font-size: 1.1rem;
+            color: var(--accent);
+        }
+
+        .drop-zone.over {
+            border-color: var(--accent);
+            background-color: #ffe0b2;
+            transform: scale(1.01);
+        }
+
+        .dropped-image {
+            width: 100%;
+            height: 90px;
+            background-color: #eee;
+            border: 2px solid var(--primary);
+            border-radius: 6px;
+            background-size: cover;
+            background-position: center;
+            margin-top: 6px;
+            cursor: grab;
+            touch-action: none;
+        }
+
+        .drop-zone.correct {
+            border: 3px solid var(--success) !important;
+            background-color: #e8f8f5 !important;
+        }
+
+        .drop-zone.incorrect {
+            border: 3px solid var(--danger) !important;
+            background-color: #fce4d6 !important;
+        }
+
+        .feedback-badge {
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+
+        .correct .feedback-badge { color: var(--success); }
+        .incorrect .feedback-badge { color: var(--danger); }
+
+        #action-container {
+            margin-top: 20px;
+            width: 100%;
+            max-width: 380px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .btn {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1.1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            font-weight: bold;
+            transition: background 0.3s ease;
+            display: none;
+        }
+
+        .btn:hover { background-color: #a04000; }
+
+        /* Estilização das Telas de Identificação e Recibo Final */
+        #modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.8);
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        #modal-content {
+            background-color: var(--background);
+            padding: 25px;
+            border-radius: 12px;
+            text-align: center;
+            border: 5px solid var(--primary);
+            max-width: 85%;
+            width: 380px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            box-sizing: border-box;
+        }
+
+        #modal-content h2 {
+            color: var(--accent);
+            font-size: 1.8rem;
+            margin-top: 0;
+        }
+
+        .input-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: var(--text);
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 10px;
+            font-size: 1rem;
+            border: 2px solid var(--primary);
+            border-radius: 6px;
+            box-sizing: border-box;
+            background-color: white;
+        }
+
+        .recibo-box {
+            background-color: white;
+            border: 2px solid var(--primary);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            text-align: left;
+            position: relative;
+        }
+
+        .recibo-item {
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+            color: #34495e;
+        }
+
+        .recibo-item strong {
+            color: var(--text);
+        }
+
+        .recibo-nota {
+            text-align: center;
+            margin-top: 15px;
+            padding-top: 10px;
+            border-top: 2px dashed var(--primary);
+        }
+
+        #media-final {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--accent);
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo-container">
+            <img src="logo.jpg" alt="Logo" onerror="this.style.display='none';">
+        </div>
+        <h1 id="main-title">Carregando...</h1>
+        <div id="prof-subtitle" class="subtitulo-professor">Carregando...</div>
+        <h2 id="rodada-display">Rodada: <span id="rodada-atual">1</span> / 5</h2>
+        <div id="pergunta-container"></div>
+        <p id="instrucoes">Carregando instruções...</p>
+    </header>
+
+    <div id="dragging-container"></div>
+    <div id="dropping-container"></div>
+
+    <div id="action-container">
+        <button id="respond-btn" class="btn">Responder</button>
+        <button id="next-btn" class="btn">Próxima Rodada</button>
+    </div>
+
+    <div id="modal">
+        <div id="modal-content">
+            <div id="tela-identificacao">
+                <h2>Identificação</h2>
+                <p style="font-size: 0.95rem; margin-bottom: 20px;">Insira os seus dados para gerar o comprovante de avaliação.</p>
+                <div class="input-group">
+                    <label for="aluno-nome">Nome Completo:</label>
+                    <input type="text" id="aluno-nome" placeholder="Digite seu nome...">
+                </div>
+                <div class="input-group">
+                    <label for="aluno-turma">Turma:</label>
+                    <input type="text" id="aluno-turma" placeholder="Ex: 8º Ano A...">
+                </div>
+                <button id="gerar-recibo-btn" class="btn" style="display: block; margin-top: 20px;">Gerar Recibo</button>
+            </div>
+
+            <div id="tela-recibo" style="display: none;">
+                <div style="display: flex; justify-content: center; margin-bottom: 10px;">
+                    <img src="logo.jpg" style="max-height: 45px; width: auto;" onerror="this.style.display='none';">
+                </div>
+                <h2 style="font-size: 1.3rem; margin-bottom: 5px; color: var(--text);">RECIBO DE AVALIAÇÃO</h2>
+                <div class="recibo-box">
+                    <div class="recibo-item"><strong>Estudante:</strong> <span id="recibo-nome">---</span></div>
+                    <div class="recibo-item"><strong>Turma:</strong> <span id="recibo-turma">---</span></div>
+                    <div class="recibo-item"><strong>Atividade:</strong> <span id="recibo-tema">---</span></div>
+                    <div class="recibo-item"><strong>Conclusão:</strong> <span id="recibo-data">---</span></div>
+                    <div class="recibo-item"><strong>Acertos:</strong> <span id="recibo-acertos">0</span> de 8</div>
+                    <div class="recibo-nota">
+                        <div>MÉDIA FINAL</div>
+                        <div id="media-final">0.0</div>
+                    </div>
+                </div>
+                <p style="font-size: 0.8rem; font-style: italic; color: #7f8c8d; margin-bottom: 15px;">Tire um print (captura de tela) para comprovar a sua nota.</p>
+                <button id="reiniciar-btn" class="btn" style="display: block;">Refazer Desafio</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+// =========================================================================
+//  PAINEL DE CONFIGURAÇÃO DIRETA - ALINHADO TOTALMENTE AOS SLIDES DA AULA
+// =========================================================================
+const CONFIG_VERSAO = {
+    titulo: "Jogo Indígena",
+    professor: "Prof. Me. Alex Marques / Arte",
+    
+    // RODADAS 1 A 4: Formato Quiz (1 Pergunta, 4 Imagens, 1 Caixa Alvo)
+    rodadasQuiz: [
+        {
+            pergunta: "O uso da tecnologia e das redes sociais por jovens originários é uma ferramenta para espalhar e defender sua herança cultural na internet. Qual imagem representa essa Antropofagia Digital?",
+            imagemCorreta: "antropofagia_digital.jpg", 
+            imagensIncorretas: ["pirataria_cultural.jpg", "grafismo_wajapi.jpg", "protecao_botanica.jpg"]
+        },
+        {
+            pergunta: "A apropriação e exploração comercial predatória de padrões estéticos nativos pelo mercado de luxo sem direitos autorais é chamada de Pirataria Cultural. Qual imagem ilustra essa prática?",
+            imagemCorreta: "pirataria_cultural.jpg", 
+            imagensIncorretas: ["antropofagia_digital.jpg", "grafismo_wajapi.jpg", "protecao_botanica.jpg"]
+        },
+        {
+            pergunta: "O Grafismo é uma linguagem gráfica e sistema de comunicação visual complexo considerado patrimônio imaterial. Qual imagem representa o Grafismo Wajãpi?",
+            imagemCorreta: "grafismo_wajapi.jpg", 
+            imagensIncorretas: ["antropofagia_digital.jpg", "pirataria_cultural.jpg", "protecao_botanica.jpg"]
+        },
+        {
+            pergunta: "A garantia legal de terras tradicionais para a salvaguarda da medicina e preservação de matérias-primas naturais deve ser um direito dos povos originários. Qual imagem retrata a Proteção Botânica?",
+            imagemCorreta: "protecao_botanica.jpg", 
+            imagensIncorretas: ["antropofagia_digital.jpg", "pirataria_cultural.jpg", "grafismo_wajapi.jpg"]
+        }
+    ],
+
+    // RODADA 5: Formato Associação Geral (4 Imagens para 4 Caixas Destino Diferentes)
+    rodadaFinalOrdenacao: {
+        instrucaoFinal: "Arraste cada imagem para o seu respectivo Conceito:",
+        caixasDestino: ["Antropofagia Digital", "Pirataria Cultural", "Grafismo Wajãpi", "Proteção Botânica"],
+        associacoes: [
+            { arquivoImagem: "antropofagia_digital.jpg", categoriaCorreta: "Antropofagia Digital" },
+            { arquivoImagem: "pirataria_cultural.jpg", categoriaCorreta: "Pirataria Cultural" },
+            { arquivoImagem: "grafismo_wajapi.jpg", categoriaCorreta: "Grafismo Wajãpi" },
+            { arquivoImagem: "protecao_botanica.jpg", categoriaCorreta: "Proteção Botânica" }
+        ]
+    }
+};
+// =========================================================================
+//              FIM DO BLOCO DE EDIÇÃO - O CÓDIGO ABAIXO SE AUTO-GERENCIA
+// =========================================================================
+        const gameData = [
+            ...CONFIG_VERSAO.rodadasQuiz.map((r, i) => ({
+                tipo: "quiz",
+                pergunta: r.pergunta,
+                imagens: [
+                    { id: `img${i+1}.1`, style: "Resposta Correta", image: r.imagemCorreta },
+                    { id: `img${i+1}.2`, style: "Incorreta", image: r.imagensIncorretas[0] },
+                    { id: `img${i+1}.3`, style: "Incorreta", image: r.imagensIncorretas[1] },
+                    { id: `img${i+1}.4`, style: "Incorreta", image: r.imagensIncorretas[2] }
+                ]
+            })),
+            {
+                tipo: "ordenacao",
+                categorias: CONFIG_VERSAO.rodadaFinalOrdenacao.caixasDestino,
+                imagens: CONFIG_VERSAO.rodadaFinalOrdenacao.associacoes.map((item, idx) => ({
+                    id: `img5.${idx+1}`,
+                    style: item.categoriaCorreta,
+                    image: item.arquivoImagem
+                }))
+            }
+        ];
+
+        let currentRound = 0;
+        let totalScore = 0;
+        let roundVerified = false;
+
+        const dragContainer = document.getElementById("dragging-container");
+        const dropContainer = document.getElementById("dropping-container");
+        const roundAtualDisplay = document.getElementById("rodada-atual");
+        const perguntaContainer = document.getElementById("pergunta-container");
+        const instrucoesDisplay = document.getElementById("instrucoes");
+        const respondBtn = document.getElementById("respond-btn");
+        const nextBtn = document.getElementById("next-btn");
+        const modal = document.getElementById("modal");
+        const reiniciarBtn = document.getElementById("reiniciar-btn");
+
+        document.getElementById("main-title").innerText = CONFIG_VERSAO.titulo;
+        document.getElementById("prof-subtitle").innerText = CONFIG_VERSAO.professor;
+
+        function initRound(round) {
+            roundVerified = false;
+            respondBtn.style.display = "none";
+            nextBtn.style.display = "none";
+            roundAtualDisplay.innerText = round + 1;
+            
+            dragContainer.innerHTML = "";
+            dropContainer.innerHTML = "";
+
+            setupTopContainer();
+
+            const roundInfo = gameData[round];
+
+            if (roundInfo.tipo === "quiz") {
+                perguntaContainer.style.display = "block";
+                perguntaContainer.innerText = roundInfo.pergunta;
+                instrucoesDisplay.innerText = "Arraste a imagem correta para o campo de resposta abaixo.";
+
+                const zone = document.createElement("div");
+                zone.classList.add("drop-zone");
+                zone.dataset.style = "Resposta Correta";
+                zone.innerHTML = `<h3>Solte a Imagem Correta Aqui</h3>`;
+                dropContainer.appendChild(zone);
+                setupDropZone(zone);
+            } else {
+                perguntaContainer.style.display = "none";
+                instrucoesDisplay.innerText = CONFIG_VERSAO.rodadaFinalOrdenacao.instrucaoFinal;
+
+                roundInfo.categorias.forEach(category => {
+                    const zone = document.createElement("div");
+                    zone.classList.add("drop-zone");
+                    zone.dataset.style = category;
+                    zone.innerHTML = `<h3>${category}</h3>`;
+                    dropContainer.appendChild(zone);
+                    setupDropZone(zone);
+                });
+            }
+
+            const shuffledImages = shuffle([...roundInfo.imagens]);
+            shuffledImages.forEach(imageData => {
+                createDraggableImage(imageData.id, imageData.style, imageData.image, dragContainer);
+            });
+        }
+
+        function createDraggableImage(id, style, bgImage, parentContainer) {
+            const imgDiv = document.createElement("div");
+            imgDiv.classList.add(parentContainer === dragContainer ? "draggable-image" : "dropped-image");
+            imgDiv.style.backgroundImage = `url('${bgImage}')`;
+            imgDiv.draggable = true;
+            imgDiv.id = id;
+            imgDiv.dataset.style = style;
+            imgDiv.dataset.imageSrc = bgImage;
+            parentContainer.appendChild(imgDiv);
+            setupElementInteractions(imgDiv);
+        }
+
+        function setupTopContainer() {
+            dragContainer.addEventListener("dragover", (e) => {
+                if (roundVerified) return;
+                e.preventDefault();
+                dragContainer.classList.add("over");
+            });
+
+            dragContainer.addEventListener("dragleave", () => {
+                dragContainer.classList.remove("over");
+            });
+
+            dragContainer.addEventListener("drop", (e) => {
+                if (roundVerified) return;
+                e.preventDefault();
+                dragContainer.classList.remove("over");
+                const id = e.dataTransfer.getData("text/plain");
+                const el = document.getElementById(id);
+                if (el && el.parentNode !== dragContainer) {
+                    executeMove(el, dragContainer);
+                }
+            });
+        }
+
+        function setupDropZone(zone) {
+            zone.addEventListener("dragover", (e) => {
+                if (roundVerified) return;
+                e.preventDefault();
+                zone.classList.add("over");
+            });
+
+            zone.addEventListener("dragleave", () => {
+                zone.classList.remove("over");
+            });
+
+            zone.addEventListener("drop", (e) => {
+                if (roundVerified) return;
+                e.preventDefault();
+                zone.classList.remove("over");
+                const id = e.dataTransfer.getData("text/plain");
+                const el = document.getElementById(id);
+                if (el && el.parentNode !== zone) {
+                    executeMove(el, zone);
+                }
+            });
+        }
+
+        function setupElementInteractions(element) {
+            element.addEventListener("dragstart", (e) => {
+                if (roundVerified) return;
+                e.target.classList.add("dragging");
+                e.dataTransfer.setData("text/plain", e.target.id);
+            });
+
+            element.addEventListener("dragend", (e) => {
+                e.target.classList.remove("dragging");
+            });
+
+            let initialX, initialY, xOffset = 0, yOffset = 0;
+
+            element.addEventListener("touchstart", (e) => {
+                if (roundVerified) return;
+                initialX = e.touches[0].clientX - xOffset;
+                initialY = e.touches[0].clientY - yOffset;
+                element.classList.add("dragging");
+            }, { passive: true });
+
+            element.addEventListener("touchmove", (e) => {
+                if (!element.classList.contains("dragging")) return;
+                e.preventDefault();
+                let currentX = e.touches[0].clientX - initialX;
+                let currentY = e.touches[0].clientY - initialY;
+                xOffset = currentX;
+                yOffset = currentY;
+                element.style.transform = `translate3d(${currentX}px, ${currentY}px, 0)`;
+            }, { passive: false });
+
+            element.addEventListener("touchend", (e) => {
+                if (!element.classList.contains("dragging")) return;
+                element.classList.remove("dragging");
+                element.style.transform = `translate3d(0px, 0px, 0)`;
+                xOffset = 0; yOffset = 0;
+
+                const changedTouch = e.changedTouches[0];
+                const dropTarget = document.elementFromPoint(changedTouch.clientX, changedTouch.clientY);
+                
+                const zone = dropTarget ? dropTarget.closest('.drop-zone') : null;
+                const topArea = dropTarget ? dropTarget.closest('#dragging-container') : null;
+
+                if (zone && element.parentNode !== zone) {
+                    executeMove(element, zone);
+                } else if (topArea && element.parentNode !== dragContainer) {
+                    executeMove(element, dragContainer);
+                } else {
+                    checkGlobalState();
+                }
+            }, { passive: true });
+        }
+
+        function executeMove(originEl, targetContainer) {
+            const originContainer = originEl.parentNode;
+            const existingTargetEl = targetContainer.querySelector('.dropped-image, .draggable-image');
+
+            if (existingTargetEl) {
+                createDraggableImage(existingTargetEl.id, existingTargetEl.dataset.style, existingTargetEl.dataset.imageSrc, originContainer);
+                existingTargetEl.remove();
+            }
+
+            createDraggableImage(originEl.id, originEl.dataset.style, originEl.dataset.imageSrc, targetContainer);
+            originEl.remove();
+
+            checkGlobalState();
+        }
+
+        function checkGlobalState() {
+            const placedCount = document.querySelectorAll(".drop-zone .dropped-image").length;
+            const roundInfo = gameData[currentRound];
+            
+            if (roundInfo.tipo === "quiz" && placedCount === 1 && !roundVerified) {
+                respondBtn.style.display = "block";
+            } else if (roundInfo.tipo === "ordenacao" && placedCount === 4 && !roundVerified) {
+                respondBtn.style.display = "block";
+            } else {
+                respondBtn.style.display = "none";
+            }
+        }
+
+        respondBtn.addEventListener("click", () => {
+            roundVerified = true;
+            respondBtn.style.display = "none";
+            
+            const zones = document.querySelectorAll(".drop-zone");
+            zones.forEach(zone => {
+                const imgInside = zone.querySelector(".dropped-image");
+                if (imgInside) {
+                    imgInside.removeAttribute("draggable");
+                    if (imgInside.dataset.style === zone.dataset.style) {
+                        zone.classList.add("correct");
+                        zone.innerHTML += `<span class="feedback-badge">&#10004;</span>`;
+                        totalScore++;
+                    } else {
+                        zone.classList.add("incorrect");
+                        zone.innerHTML += `<span class="feedback-badge">&#10006;</span>`;
+                    }
+                }
+            });
+
+            if (currentRound === gameData.length - 1) {
+                nextBtn.innerText = "Finalizar";
+            } else {
+                nextBtn.innerText = "Próxima Rodada";
+            }
+            nextBtn.style.display = "block";
+        });
+
+        nextBtn.addEventListener("click", () => {
+            currentRound++;
+            if (currentRound < gameData.length) {
+                initRound(currentRound);
+            } else {
+                showIdentificacaoScreen();
+            }
+        });
+
+        function showIdentificacaoScreen() {
+            modal.style.display = "flex";
+            document.getElementById("tela-identificacao").style.display = "block";
+            document.getElementById("tela-recibo").style.display = "none";
+        }
+
+        document.getElementById("gerar-recibo-btn").addEventListener("click", () => {
+            const nomeInput = document.getElementById("aluno-nome").value.trim();
+            const turmaInput = document.getElementById("aluno-turma").value.trim();
+
+            if (nomeInput === "" || turmaInput === "") {
+                alert("Por favor, preencha o seu Nome e a sua Turma antes de prosseguir!");
+                return;
+            }
+
+            const agora = new Date();
+            const dataFormatada = agora.toLocaleDateString('pt-BR') + " às " + agora.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
+
+            document.getElementById("recibo-nome").innerText = nomeInput;
+            document.getElementById("recibo-turma").innerText = turmaInput;
+            document.getElementById("recibo-tema").innerText = CONFIG_VERSAO.titulo;
+            document.getElementById("recibo-data").innerText = dataFormatada;
+            document.getElementById("recibo-acertos").innerText = totalScore;
+            
+            let media = (totalScore / 8) * 10;
+            document.getElementById("media-final").innerText = media.toFixed(1);
+
+            document.getElementById("tela-identificacao").style.display = "none";
+            document.getElementById("tela-recibo").style.display = "block";
+        });
+
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        reiniciarBtn.addEventListener("click", () => {
+            currentRound = 0;
+            totalScore = 0;
+            document.getElementById("aluno-nome").value = "";
+            document.getElementById("aluno-turma").value = "";
+            modal.style.display = "none";
+            initRound(currentRound);
+        });
+
+        initRound(currentRound);
+    </script>
+</body>
+</html>
